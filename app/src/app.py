@@ -1,11 +1,10 @@
-from logging import Logger
-from typing import Annotated
+import logging
 from http import HTTPStatus
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from schemas import ModelInput, ModelResponse, ModelPrediction
+from schemas import Request, Response, ModelPrediction
 
 import json
 import logging.config
@@ -49,9 +48,9 @@ def read_root_html_page():
 @app.post(
     path="/prediction", 
     status_code=HTTPStatus.OK, 
-    response_model=ModelResponse
+    response_model=Response
 )
-def make_prediction(model_input: Annotated[ModelInput, Form()]):
+def make_prediction(model_input: Request):
     logging.info("Making prediction")
     
     result = ModelPrediction(
