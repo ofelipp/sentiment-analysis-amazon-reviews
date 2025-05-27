@@ -1,0 +1,71 @@
+services:
+  api:
+    build:
+      context: app/
+    container_name: ml_api
+    restart: always
+    ports:
+      - 8000:8000
+
+  mlflow:
+    build:
+      context: mlflow_server/
+    container_name: mlflow
+    restart: always
+    ports:
+      - 5000:5000
+    networks:
+      - mlflow-network
+    depends_on:
+     - database
+     - artifacts
+  
+  database:
+    build:
+      context: database_server/
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: mlflowdb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - metadata-volume:/var/lib/postgresql/data
+    networks:
+      - mlflow-network
+    healthcheck:
+      test: [ "CMD", "pg_isready -U $$POSTGRES_USER" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  artifacts:
+    build:
+      context: artifacts_server/
+    container_name: minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: user
+      MINIO_ROOT_PASSWORD: password
+    volumes:
+      - artifacts-volume:/data
+    networks:
+      - mlflow-network
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+volumes:
+  metadata-volume:
+  artifacts-volume:
+
+networks:
+  mlflow-network:
+  
